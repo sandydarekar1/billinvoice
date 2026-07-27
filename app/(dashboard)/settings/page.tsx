@@ -7,23 +7,45 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Save, Loader2, CheckCircle2 } from "lucide-react";
-import type { AISettings } from "@/types";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Save, Loader2, CheckCircle2, Building2, Cpu } from "lucide-react";
+import type { AISettings, BusinessProfile } from "@/types";
 
 export default function SettingsPage() {
-  const [settings, setSettings] = useState<AISettings>({ provider: "openai", api_key: "", model: "gpt-4o", ocr_enabled: true });
+  const [tab, setTab] = useState("business");
+  const [aiSettings, setAiSettings] = useState<AISettings>({ provider: "openai", api_key: "", model: "gpt-4o", ocr_enabled: true });
+  const [business, setBusiness] = useState<Partial<BusinessProfile>>({});
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const stored = localStorage.getItem("invoicepro-ai-settings");
-    if (stored) setSettings(JSON.parse(stored));
+    if (stored) setAiSettings(JSON.parse(stored));
+    fetch("/api/business-profile")
+      .then(r => r.json())
+      .then(d => { if (d.profile) setBusiness(d.profile); })
+      .catch(() => {})
+      .finally(() => setLoading(false));
   }, []);
 
-  function handleSave() {
+  async function saveBusiness() {
     setSaving(true);
-    localStorage.setItem("invoicepro-ai-settings", JSON.stringify(settings));
-    setTimeout(() => { setSaving(false); setSaved(true); setTimeout(() => setSaved(false), 2000); }, 500);
+    try {
+      const res = await fetch("/api/business-profile", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(business),
+      });
+      if (res.ok) { setSaved(true); setTimeout(() => setSaved(false), 2000); }
+    } catch { /* ignore */ }
+    finally { setSaving(false); }
+  }
+
+  function saveAI() {
+    setSaving(true);
+    localStorage.setItem("invoicepro-ai-settings", JSON.stringify(aiSettings));
+    setTimeout(() => { setSaving(false); setSaved(true); setTimeout(() => setSaved(false), 2000); }, 300);
   }
 
   const models: Record<string, string[]> = {
@@ -32,87 +54,89 @@ export default function SettingsPage() {
     google: ["gemini-1.5-flash", "gemini-1.5-pro"],
   };
 
+  if (loading) return <div className="flex items-center justify-center h-64"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" /></div>;
+
   return (
     <div className="space-y-6 max-w-2xl">
       <div>
         <h1 className="text-2xl font-bold">Settings</h1>
-        <p className="text-sm text-muted-foreground">Configure AI providers and preferences</p>
+        <p className="text-sm text-muted-foreground">Manage your business profile and integrations</p>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>AI Provider</CardTitle>
-          <CardDescription>Configure the AI provider for OCR invoice scanning and data extraction</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="space-y-2">
-            <Label>Provider</Label>
-            <Select value={settings.provider} onValueChange={(v) => setSettings({ ...settings, provider: v as any, model: models[v][0] })}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="openai">OpenAI (GPT-4o)</SelectItem>
-                <SelectItem value="anthropic">Anthropic (Claude)</SelectItem>
-                <SelectItem value="google">Google (Gemini)</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+      <Tabs value={tab} onValueChange={setTab}>
+        <TabsList>
+          <TabsTrigger value="business"><Building2 className="h-4 w-4 mr-1" />Business Profile</TabsTrigger>
+          <TabsTrigger value="ai"><Cpu className="h-4 w-4 mr-1" />AI Settings</TabsTrigger>
+        </TabsList>
 
-          <div className="space-y-2">
-            <Label>Model</Label>
-            <Select value={settings.model} onValueChange={(v) => setSettings({ ...settings, model: v })}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
-              <SelectContent>
-                {(models[settings.provider] || []).map((m) => <SelectItem key={m} value={m}>{m}</SelectItem>)}
-              </SelectContent>
-            </Select>
-          </div>
+        <TabsContent value="business" className="space-y-4">
+          <Card>
+            <CardHeader><CardTitle>Company Information</CardTitle><CardDescription>These details appear on your invoices and PDFs</CardDescription></CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2"><Label>Company Name</Label><Input value={business.company_name || ""} onChange={(e) => setBusiness({ ...business, company_name: e.target.value })} placeholder="Your Company Pvt Ltd" /></div>
+                <div className="space-y-2"><Label>Legal Name</Label><Input value={business.legal_name || ""} onChange={(e) => setBusiness({ ...business, legal_name: e.target.value })} placeholder="Registered legal name" /></div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2"><Label>GSTIN</Label><Input value={business.gstin || ""} onChange={(e) => setBusiness({ ...business, gstin: e.target.value })} placeholder="27AABCU9603R1ZX" /></div>
+                <div className="space-y-2"><Label>PAN</Label><Input value={business.pan || ""} onChange={(e) => setBusiness({ ...business, pan: e.target.value })} placeholder="AABCU9603R" /></div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2"><Label>Phone</Label><Input value={business.phone || ""} onChange={(e) => setBusiness({ ...business, phone: e.target.value })} placeholder="+91 9876543210" /></div>
+                <div className="space-y-2"><Label>Email</Label><Input type="email" value={business.email || ""} onChange={(e) => setBusiness({ ...business, email: e.target.value })} placeholder="hello@company.com" /></div>
+              </div>
+              <div className="space-y-2"><Label>Address</Label><Input value={business.address || ""} onChange={(e) => setBusiness({ ...business, address: e.target.value })} placeholder="123, Business Street" /></div>
+              <div className="grid grid-cols-3 gap-4">
+                <div className="space-y-2"><Label>City</Label><Input value={business.city || ""} onChange={(e) => setBusiness({ ...business, city: e.target.value })} placeholder="Mumbai" /></div>
+                <div className="space-y-2"><Label>State</Label><Input value={business.state || ""} onChange={(e) => setBusiness({ ...business, state: e.target.value })} placeholder="Maharashtra" /></div>
+                <div className="space-y-2"><Label>Pincode</Label><Input value={business.pincode || ""} onChange={(e) => setBusiness({ ...business, pincode: e.target.value })} placeholder="400001" /></div>
+              </div>
+            </CardContent>
+          </Card>
 
-          <div className="space-y-2">
-            <Label>API Key</Label>
-            <Input
-              type="password"
-              value={settings.api_key}
-              onChange={(e) => setSettings({ ...settings, api_key: e.target.value })}
-              placeholder={`Enter your ${settings.provider} API key`}
-            />
-            <p className="text-xs text-muted-foreground">Your API key is stored locally in your browser and never sent to our servers.</p>
-          </div>
+          <Card>
+            <CardHeader><CardTitle>Bank Details</CardTitle><CardDescription>For payment collection shown on invoices</CardDescription></CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2"><Label>Bank Name</Label><Input value={business.bank_name || ""} onChange={(e) => setBusiness({ ...business, bank_name: e.target.value })} placeholder="State Bank of India" /></div>
+                <div className="space-y-2"><Label>Branch</Label><Input value={business.bank_branch || ""} onChange={(e) => setBusiness({ ...business, bank_branch: e.target.value })} placeholder="Main Branch" /></div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2"><Label>Account Number</Label><Input value={business.bank_account_no || ""} onChange={(e) => setBusiness({ ...business, bank_account_no: e.target.value })} placeholder="12345678901" /></div>
+                <div className="space-y-2"><Label>IFSC Code</Label><Input value={business.bank_ifsc || ""} onChange={(e) => setBusiness({ ...business, bank_ifsc: e.target.value })} placeholder="SBIN0001234" /></div>
+              </div>
+              <div className="space-y-2"><Label>UPI ID</Label><Input value={business.upi_id || ""} onChange={(e) => setBusiness({ ...business, upi_id: e.target.value })} placeholder="company@upi" /></div>
+            </CardContent>
+          </Card>
 
-          <div className="flex items-center justify-between py-2">
-            <div>
-              <Label>OCR Scanning</Label>
-              <p className="text-xs text-muted-foreground">Enable AI-powered invoice scanning</p>
-            </div>
-            <button
-              onClick={() => setSettings({ ...settings, ocr_enabled: !settings.ocr_enabled })}
-              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${settings.ocr_enabled ? "bg-primary" : "bg-input"}`}
-            >
-              <span className={`inline-block h-4 w-4 transform rounded-full bg-background transition-transform ${settings.ocr_enabled ? "translate-x-6" : "translate-x-1"}`} />
-            </button>
-          </div>
+          <Card>
+            <CardHeader><CardTitle>Invoice Settings</CardTitle></CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2"><Label>Invoice Prefix</Label><Input value={business.invoice_prefix || "INV"} onChange={(e) => setBusiness({ ...business, invoice_prefix: e.target.value })} placeholder="INV" /></div>
+                <div className="space-y-2"><Label>Footer Text</Label><Input value={business.invoice_footer || ""} onChange={(e) => setBusiness({ ...business, invoice_footer: e.target.value })} placeholder="Thank you for your business!" /></div>
+              </div>
+            </CardContent>
+          </Card>
 
-          <Button onClick={handleSave} disabled={saving} className="w-full">
+          <Button onClick={saveBusiness} disabled={saving} className="w-full">
             {saving ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : saved ? <CheckCircle2 className="h-4 w-4 mr-1" /> : <Save className="h-4 w-4 mr-1" />}
-            {saved ? "Saved!" : "Save Settings"}
+            {saved ? "Saved!" : "Save Business Profile"}
           </Button>
-        </CardContent>
-      </Card>
+        </TabsContent>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>About InvoicePro</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-2 text-sm text-muted-foreground">
-          <p><strong>Version:</strong> 1.0.0</p>
-          <p><strong>Tech Stack:</strong> Next.js 14, TypeScript, PostgreSQL (Supabase), Tailwind CSS, shadcn/ui</p>
-          <p><strong>Deployment:</strong> Docker & Coolify ready</p>
-          <div className="flex gap-2 mt-3">
-            <Badge variant="outline">GST Compliant</Badge>
-            <Badge variant="outline">Made in India 🇮🇳</Badge>
-            <Badge variant="outline">Self-Hostable</Badge>
-          </div>
-        </CardContent>
-      </Card>
+        <TabsContent value="ai" className="space-y-4">
+          <Card>
+            <CardHeader><CardTitle>AI Provider</CardTitle><CardDescription>Configure AI for OCR invoice scanning</CardDescription></CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-2"><Label>Provider</Label><Select value={aiSettings.provider} onValueChange={(v) => setAiSettings({ ...aiSettings, provider: v as any, model: models[v][0] })}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="openai">OpenAI</SelectItem><SelectItem value="anthropic">Anthropic</SelectItem><SelectItem value="google">Google</SelectItem></SelectContent></Select></div>
+              <div className="space-y-2"><Label>Model</Label><Select value={aiSettings.model} onValueChange={(v) => setAiSettings({ ...aiSettings, model: v })}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{(models[aiSettings.provider] || []).map((m) => <SelectItem key={m} value={m}>{m}</SelectItem>)}</SelectContent></Select></div>
+              <div className="space-y-2"><Label>API Key</Label><Input type="password" value={aiSettings.api_key} onChange={(e) => setAiSettings({ ...aiSettings, api_key: e.target.value })} placeholder="sk-..." /></div>
+              <Button onClick={saveAI} disabled={saving} className="w-full">{saving ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : saved ? <CheckCircle2 className="h-4 w-4 mr-1" /> : <Save className="h-4 w-4 mr-1" />}{saved ? "Saved!" : "Save AI Settings"}</Button>
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }

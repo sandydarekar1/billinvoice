@@ -6,7 +6,7 @@ const JWT_SECRET = new TextEncoder().encode(
   process.env.JWT_SECRET || "fallback-dev-secret-change-in-production-32chars"
 );
 
-const PROTECTED_ROUTES = ["/dashboard", "/invoices", "/customers", "/settings", "/ocr"];
+const PROTECTED_ROUTES = ["/dashboard", "/invoices", "/customers", "/products", "/settings", "/ocr"];
 const AUTH_ROUTES = ["/login", "/register"];
 
 export async function middleware(request: NextRequest) {
@@ -42,6 +42,7 @@ export const config = {
     "/dashboard/:path*",
     "/invoices/:path*",
     "/customers/:path*",
+    "/products/:path*",
     "/settings/:path*",
     "/ocr/:path*",
     "/login",

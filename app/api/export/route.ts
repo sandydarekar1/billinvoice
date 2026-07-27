@@ -37,7 +37,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "No invoices found" }, { status: 404 });
     }
 
-    const content = exportInvoices(invoices as any, format);
+    const content = exportInvoices(invoices as any, format as "json" | "csv" | "markdown");
 
     const contentTypes: Record<string, string> = {
       json: "application/json",

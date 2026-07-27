@@ -10,6 +10,30 @@ export interface User {
   updated_at: string;
 }
 
+export interface BusinessProfile {
+  id: string;
+  user_id: string;
+  company_name: string;
+  legal_name: string;
+  gstin: string;
+  pan: string;
+  phone: string;
+  email: string;
+  address: string;
+  city: string;
+  state: string;
+  pincode: string;
+  logo_url: string;
+  bank_name: string;
+  bank_account_no: string;
+  bank_ifsc: string;
+  bank_branch: string;
+  upi_id: string;
+  signature_url: string;
+  invoice_prefix: string;
+  invoice_footer: string;
+}
+
 export interface Customer {
   id: string;
   user_id: string;
@@ -17,10 +41,26 @@ export interface Customer {
   email?: string;
   phone?: string;
   gstin?: string;
+  pan?: string;
   billing_address?: string;
   shipping_address?: string;
-  pan?: string;
   state?: string;
+  opening_balance: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface Product {
+  id: string;
+  user_id: string;
+  name: string;
+  hsn_code: string;
+  gst_rate: number;
+  unit_price: number;
+  unit: string;
+  category: string;
+  description: string;
+  sku: string;
   created_at: string;
   updated_at: string;
 }
@@ -46,17 +86,36 @@ export interface Invoice {
   invoice_date: string;
   due_date: string;
   status: "draft" | "sent" | "paid" | "overdue" | "cancelled";
+  invoice_type: "invoice" | "quotation" | "proforma" | "delivery_challan";
   items: InvoiceItem[];
   subtotal: number;
   total_tax: number;
   total_amount: number;
+  amount_paid: number;
+  balance_due: number;
   notes?: string;
   terms?: string;
   place_of_supply?: string;
   reverse_charge: boolean;
+  is_recurring: boolean;
+  recurring_interval: "" | "weekly" | "monthly" | "quarterly" | "yearly";
+  recurring_start?: string;
+  recurring_end?: string;
   version: number;
   created_at: string;
   updated_at: string;
+}
+
+export interface Payment {
+  id: string;
+  user_id: string;
+  invoice_id: string;
+  amount: number;
+  payment_date: string;
+  payment_mode: "cash" | "bank_transfer" | "upi" | "cheque" | "other";
+  reference_no: string;
+  notes: string;
+  created_at: string;
 }
 
 export interface InvoiceVersion {
@@ -112,7 +171,7 @@ export interface AISettings {
 }
 
 export interface ExportOptions {
-  format: "json" | "csv" | "markdown";
+  format: "json" | "csv" | "markdown" | "pdf";
   invoiceIds?: string[];
   dateRange?: { from: string; to: string };
 }
