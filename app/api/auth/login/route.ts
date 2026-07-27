@@ -12,7 +12,7 @@ export async function POST(request: NextRequest) {
     }
 
     const db = getServiceClient();
-    const { data: user } = await (db.from("users") as any).select("id, email, name, password_hash, company_name, created_at").eq("email", email.toLowerCase()).single();
+    const { data: user } = await (db.from("app_users") as any).select("id, email, name, password_hash, company_name, created_at").eq("email", email.toLowerCase()).single();
     const userData = user as any;
 
     if (!userData) {

@@ -3,10 +3,10 @@ import { getServiceClient } from "@/lib/supabase/client";
 export interface Database {
   public: {
     Tables: {
-      users: {
+      app_users: {
         Row: { id: string; email: string; password_hash: string; name: string; company_name: string; gstin: string | null; phone: string | null; address: string | null; created_at: string; updated_at: string; };
-        Insert: Omit<Database["public"]["Tables"]["users"]["Row"], "id" | "created_at" | "updated_at">;
-        Update: Partial<Database["public"]["Tables"]["users"]["Insert"]>;
+        Insert: Omit<Database["public"]["Tables"]["app_users"]["Row"], "id" | "created_at" | "updated_at">;
+        Update: Partial<Database["public"]["Tables"]["app_users"]["Insert"]>;
       };
       customers: {
         Row: { id: string; user_id: string; name: string; email: string | null; phone: string | null; gstin: string | null; pan: string | null; billing_address: string | null; shipping_address: string | null; state: string | null; created_at: string; updated_at: string; };

@@ -21,14 +21,14 @@ export async function POST(request: NextRequest) {
     }
 
     const db = getServiceClient();
-    const { data: existing } = await (db.from("users") as any).select("id").eq("email", email.toLowerCase()).single();
+    const { data: existing } = await (db.from("app_users") as any).select("id").eq("email", email.toLowerCase()).single();
 
     if (existing) {
       return NextResponse.json({ error: "Email already registered" }, { status: 409 });
     }
 
     const hashedPassword = await bcrypt.hash(password, 12);
-    const { data: user, error } = await (db.from("users") as any).insert({
+    const { data: user, error } = await (db.from("app_users") as any).insert({
       email: email.toLowerCase(),
       password_hash: hashedPassword,
       name,

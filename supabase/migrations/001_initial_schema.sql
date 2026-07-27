@@ -2,7 +2,7 @@
 -- PostgreSQL + Supabase
 
 -- Users table (extends Supabase auth)
-CREATE TABLE IF NOT EXISTS users (
+CREATE TABLE IF NOT EXISTS app_users (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   email TEXT UNIQUE NOT NULL,
   password_hash TEXT NOT NULL,
@@ -18,18 +18,8 @@ CREATE TABLE IF NOT EXISTS users (
 -- Customers table
 CREATE TABLE IF NOT EXISTS customers (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-  name TEXT NOT NULL,
-  email TEXT DEFAULT '',
-  phone TEXT DEFAULT '',
-  gstin TEXT DEFAULT '',
-  pan TEXT DEFAULT '',
-  billing_address TEXT DEFAULT '',
-  shipping_address TEXT DEFAULT '',
-  state TEXT DEFAULT '',
-  created_at TIMESTAMPTZ DEFAULT now(),
-  updated_at TIMESTAMPTZ DEFAULT now()
-);
+  user_id UUID NOT NULL REFERENCES app_users(id) ON DELETE CASCADE,
+
 
 CREATE INDEX idx_customers_user_id ON customers(user_id);
 
@@ -73,13 +63,13 @@ CREATE TABLE IF NOT EXISTS invoice_versions (
 CREATE INDEX idx_invoice_versions_invoice_id ON invoice_versions(invoice_id);
 
 -- RLS Policies (for Supabase)
-ALTER TABLE users ENABLE ROW LEVEL SECURITY;
+ALTER TABLE app_users ENABLE ROW LEVEL SECURITY;
 ALTER TABLE customers ENABLE ROW LEVEL SECURITY;
 ALTER TABLE invoices ENABLE ROW LEVEL SECURITY;
 ALTER TABLE invoice_versions ENABLE ROW LEVEL SECURITY;
 
 -- Users can only see their own data
-CREATE POLICY users_policy ON users FOR ALL USING (auth.uid() = id);
+CREATE POLICY users_policy ON app_users FOR ALL USING (auth.uid() = id);
 CREATE POLICY customers_policy ON customers FOR ALL USING (auth.uid() = user_id);
 CREATE POLICY invoices_policy ON invoices FOR ALL USING (auth.uid() = user_id);
 CREATE POLICY invoice_versions_policy ON invoice_versions FOR ALL 
