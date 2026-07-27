@@ -5,12 +5,13 @@ WORKDIR /app
 FROM base AS deps
 COPY package.json package-lock.json* ./
 ENV NODE_ENV=development
-RUN npm ci --include=dev
+RUN npm ci
 
 FROM base AS builder
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 ENV NEXT_TELEMETRY_DISABLED=1
+ENV NODE_ENV=production
 RUN npm run build
 
 FROM base AS runner
