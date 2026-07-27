@@ -29,9 +29,12 @@ RUN addgroup --system --gid 1001 nodejs && \
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 COPY --from=builder --chown=nextjs:nodejs /app/public ./public
+COPY --chown=nextjs:nodejs start.sh ./start.sh
+
+RUN chmod +x ./start.sh
 
 USER nextjs
 EXPOSE 3002
 ENV PORT=3002
 ENV HOSTNAME=0.0.0.0
-CMD ["node", "server.js"]
+CMD ["./start.sh"]
