@@ -3,9 +3,17 @@ import { cookies } from "next/headers";
 import { cache } from "react";
 import type { User } from "@/types";
 
-const JWT_SECRET = new TextEncoder().encode(
-  process.env.JWT_SECRET || "fallback-dev-secret-change-in-production-32chars"
-);
+let JWT_SECRET: Uint8Array | null = null;
+
+function getJwtSecret(): Uint8Array {
+  if (!JWT_SECRET) {
+    if (!process.env.JWT_SECRET) {
+      throw new Error("Missing JWT_SECRET environment variable");
+    }
+    JWT_SECRET = new TextEncoder().encode(process.env.JWT_SECRET);
+  }
+  return JWT_SECRET;
+}
 
 const COOKIE_NAME = "invoicepro-token";
 const MAX_AGE = 60 * 60 * 24 * 7; // 7 days
@@ -15,12 +23,12 @@ export async function createToken(user: Omit<User, "password">): Promise<string>
     .setProtectedHeader({ alg: "HS256" })
     .setIssuedAt()
     .setExpirationTime("7d")
-    .sign(JWT_SECRET);
+    .sign(getJwtSecret());
 }
 
 export async function verifyToken(token: string) {
   try {
-    const { payload } = await jwtVerify(token, JWT_SECRET);
+    const { payload } = await jwtVerify(token, getJwtSecret());
     return payload as { sub: string; email: string; name: string };
   } catch {
     return null;

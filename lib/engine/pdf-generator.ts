@@ -1,6 +1,5 @@
 "use client";
 
-import { useCallback } from "react";
 import jsPDF from "jspdf";
 import type { Invoice } from "@/types";
 
